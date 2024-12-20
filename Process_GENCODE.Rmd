@@ -1,0 +1,71 @@
+---
+title: "Process_GENCODE"
+author: "Lan Do"
+date: "2024-12-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+if (!requireNamespace("rtracklayer", quietly = TRUE)) {
+  install.packages("BiocManager")
+  BiocManager::install("rtracklayer")
+}
+```
+
+Extract Relevant Columns
+
+```{r}
+# rtracklayer is for working with UCSC genome browser
+library(rtracklayer)
+library(tidyverse)
+```
+### Annotation data
+```{r}
+gtf <- import('gencode.v47.chr_patch_hapl_scaff.annotation.gtf')
+gtf_df <- as.data.frame(gtf)
+```
+
+```{r}
+gene_annotations <- select(gtf_df, gene_id, gene_name, transcript_id) |>
+  filter(!is.na(transcript_id)) |>
+  distinct() |>
+  rename(HUMAN_GENE_SYMBOL = gene_name)
+gene_annotations
+```
+
+### Metadata
+```{r}
+metadata <- read.delim('gencode.v47.metadata.EntrezGene', header = F, sep = '\t') 
+head(metadata)
+```
+
+```{r}
+metadata <- rename(metadata, transcript_id = V1)
+metadata <- rename(metadata, entrez_id = V2)
+metadata
+
+```
+
+### Join annotation and metadata together
+```{r}
+merged_data <- left_join(gene_annotations, metadata, by='transcript_id')
+merged_data
+```
+### write complete gencode metadata
+```{r}
+write.csv(merged_data, "gencode_metadata.csv", row.names = F)
+```
+
+### filter out transrcript IDs for size
+
+I'm not sure if we actually need transcript IDs downstream, so I'm going to group all transcript IDs so that this is more managable to use. 
+```{r}
+collapsed_gencode <- merged_data |> 
+  group_by(gene_id) |>
+  summarise(transcript_ids = paste(transcript_id, collapse = '|'),
+            HUMAN_GENE_SYMBOL=first(HUMAN_GENE_SYMBOL),
+            entrez_id = first(entrez_id))
+write.csv(collapsed_gencode, "collapsed_gencode.csv", row.names = F)
+```
+

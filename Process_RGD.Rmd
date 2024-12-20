@@ -1,0 +1,21 @@
+---
+title: "Process_RGD"
+author: "Lan Do"
+date: "2024-12-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+human_ortholog <- read.table("ORTHOLOGS_HUMAN.txt", 
+                 header = T, 
+                 fill = T,
+                 sep = "\t", 
+                 comment.char = "#") |>
+  select(HUMAN_GENE_SYMBOL, HUMAN_GENE_ENSEMBL_GENE_ID, RAT_GENE_SYMBOL, RAT_GENE_ENSEMBL_GENE_ID)
+write.csv(human_ortholog, "prepared_ortholog.csv", row.names = F)
+```
