@@ -1,0 +1,35 @@
+---
+title: "compile_ortholog_map"
+author: "Lan Do"
+date: "2024-12-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+gencode <- read_csv("collapsed_gencode.csv")
+rgd <- read_csv('prepared_ortholog.csv')
+```
+
+
+```{r}
+ortholog_map <- left_join(rgd, gencode, by = 'HUMAN_GENE_SYMBOL')
+```
+
+```{r}
+
+BAT_counts <- read.table('motrpac_pass1b-06_t69-brown-adipose_transcript-rna-seq_rsem-genes-count.txt', header = T)
+
+# Map Rat symbols to Human symbols
+rna_human <- left_join(BAT_counts, ortholog_map, by = c("gene_id" = "HUMAN_GENE_ENSEMBL_ID")) |>
+  filter(!is.na(Human_Symbol)) %>%
+  group_by(Human_Symbol) %>%
+  summarise(across(where(is.numeric), sum))
+
+# Save the humanized RNA-seq data
+write.csv(rna_human, "humanized_rna_counts.csv", row.names = FALSE)
+```
